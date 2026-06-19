@@ -1,0 +1,70 @@
+
+## Aufgabe 12.3 – Regressionsmodell für Endgewicht
+
+### Ziel
+
+Ziel ist es, das Endgewicht einer Flasche (`final_weight`) anhand von Sensordaten
+vorherzusagen. Trainiert wurde auf den eigenen gesammelten Daten aus Aufgabe 12.1.2.
+
+### Vorgehen
+
+Die Daten wurden aus `data.csv` geladen. Als Zielgröße dient `final_weight`.
+Die Features wurden in sechs Kombinationen getestet, jeweils mit einem linearen
+Regressionsmodell (80% Training, 20% Test, random_state=42).
+Der MSE (Mean Squared Error) wurde für Training und Test berechnet.
+
+### Ergebnisse
+
+| Genutzte Spalten (X) | Modell-Typ | MSE (Training) | MSE (Test) |
+|----------------------|------------|---------------|------------|
+| `fill_level_grams_red` | Linear | 50.2053 | 76.0945 |
+| `fill_level_grams_red, vibration_index_red` | Linear | 46.1835 | 72.8148 |
+| `fill_level_grams_red, vibration_index_red, temperature_red` | Linear | 46.1195 | 72.4314 |
+| `fill_level_grams_red/blue/green` | Linear | 36.7725 | 45.9881 |
+| `fill_level_grams_red/blue/green, vibration_index_red/blue/green` | Linear | 0.1185 | 0.1369 |
+| `fill_level_grams_red/blue/green, vibration_index_red/blue/green, temperature_red/blue/green` | Linear | 0.0000 | 0.0000 |
+
+### Bestes Modell
+
+Das beste Modell verwendet alle neun Features (Füllstand, Vibrationsindex und Temperatur
+aller drei Dispenser) und erreicht einen MSE von ~0.0000 auf den Testdaten.
+
+**Formel:**
+
+```
+y = 0.0005 * fill_level_grams_red
+  + 0.0005 * fill_level_grams_blue
+  + 0.0005 * fill_level_grams_green
+  + 0.1000 * vibration_index_red
+  + 0.1000 * vibration_index_blue
+  + 0.1000 * vibration_index_green
+  + 0.2000 * temperature_red
+  + 0.2000 * temperature_blue
+  + 0.2000 * temperature_green
+  - 15.0000
+```
+
+Der sehr niedrige MSE lässt darauf schließen, dass die Simulation einen direkten
+mathematischen Zusammenhang zwischen den Sensordaten und dem Endgewicht verwendet.
+In realen Industriedaten wäre ein MSE von 0 unrealistisch.
+
+### Interpretation
+
+- **Füllstand** hat mit Koeffizient 0.0005 kaum direkten Einfluss auf das Endgewicht
+- **Vibrationsindex** (0.1 je Farbe) hat mittleren Einfluss
+- **Temperatur** (0.2 je Farbe) hat den größten Einfluss pro Feature
+
+### Prognose
+
+Die Prognose wurde auf dem gemeinsamen Datensatz `X.csv` (247 Flaschen) mit dem
+besten Modell erstellt und in `reg_SiJuLe.csv` gespeichert.
+
+Beispiel der ersten Vorhersagen:
+
+| Flaschen ID | y_hat |
+|-------------|-------|
+| 368 | 52.68 |
+| 369 | 50.78 |
+| 370 | 50.95 |
+| 371 | 27.54 |
+| 372 | 27.27 |

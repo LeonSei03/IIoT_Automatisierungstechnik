@@ -1,0 +1,69 @@
+# Aufgabe 12.1.2 – Datenspeicherung und Visualisierung
+
+## Vorgehen
+
+Ziel war es, die Daten der Learning Factory Simulation über MQTT zu empfangen,
+pro Flasche zusammenzuführen, in einer CSV-Datei zu speichern und live zu visualisieren.
+
+Das System besteht aus vier Dateien:
+
+- **mqtt_client.py** – Verbindet sich mit dem Broker und empfängt alle Nachrichten
+- **transform.py** – Führt alle Topics einer Flasche über die `bottle`-ID zusammen
+- **database.py** – Schreibt eine fertige Flasche als eine Zeile in die CSV
+- **visualisierung.py** – Liest die CSV alle 5 Sekunden neu und aktualisiert den Plot
+
+## Datenquelle
+
+Broker: `158.180.44.197:1883`  
+Topic: `aut/SoSe26/learning_factory_simulation/#`  
+Authentifizierung: Benutzername `bobm`
+
+## Transform-Logik
+
+Pro Flasche treffen mehrere Nachrichten auf verschiedenen Topics ein. Der Transform
+sammelt sie im RAM in einem Dictionary (Schlüssel = `bottle`-ID). Sobald `ground_truth`
+ankommt (letztes Topic), gilt die Flasche als vollständig und wird gespeichert.
+
+Die Temperatur enthält keine `bottle`-ID – die Zuordnung erfolgt über den Zeitstempel
+(Toleranz: ±5 Sekunden).
+
+## CSV-Struktur
+
+Eine Zeile pro Flasche mit folgenden Spalten:
+
+| Spalte | Beschreibung |
+|--------|-------------|
+| `bottle` | Flaschen-ID (String) |
+| `recipe` | Rezept-ID |
+| `fill_level_grams_red/blue/green` | Füllstand je Dispenser (g) |
+| `vibration_index_red/blue/green` | Vibrationsindex je Dispenser |
+| `time_red/blue/green` | Unix-Timestamp je Dispenser |
+| `temperature_C_red/blue/green` | Temperatur je Dispenser (°C) |
+| `final_weight` | Endgewicht der Flasche (g) |
+| `time_scale` | Unix-Timestamp der Waage |
+| `is_cracked` | Qualitätslabel (0 = ok, 1 = gesprungen) |
+| `drop_oscillation` | Liste mit 500 Schwingungswerten (JSON-String) |
+
+## Visualisierung
+
+Der Plot zeigt `final_weight` über alle gespeicherten Flaschen.
+Er aktualisiert sich automatisch alle 5 Sekunden während neue Daten hereinkommen.
+
+Screenshots des Plots vom final_weight
+![Plot final_weight](plot_screenshot.png)
+
+## Datenbasis
+
+Die Aufzeichnung lief für ca. 15min. 
+Die gespeicherten Daten dienen als Grundlage für die folgenden Aufgaben:
+
+- **Lineare Regression** (Termin 3): Füllstand + Vibrationsindex + Temperatur → Endgewicht
+- **Klassifikation** (Termin 4): `drop_oscillation` + `is_cracked` → gesprungene Flaschen erkennen
+
+
+## Dashboard
+
+![Tabelle der Rohdaten der letzten 20 Flaschen](rohdaten.png)
+![Abbildung des Dashboard's](dashboard.png)
+
+

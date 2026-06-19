@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_DoorCtrl" Id="{090948f1-2993-4c2b-bf5b-5711c29666c2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DoorCtrl
+VAR_INPUT
+	// Steuereingänge
+	bOpen : BOOL;
+	bClose : BOOL;
+	
+	// Sensoreingänge
+	bDoorC : BOOL;
+	bDoorO : BOOL;
+	
+	// Fehlersignal
+	bError : BOOL;
+	
+	//Freigabesignal
+	bEnable : BOOL;
+	
+END_VAR
+VAR_OUTPUT
+	bVO : BOOL :=FALSE; // VEntil zum öffnen der Tür
+	bVC : BOOL := FALSE; // VEntil zum schließen der Tür
+END_VAR
+VAR
+	eStateCtrl : E_StateDoorCtrl; // e für enumeration
+	nMemState : E_StateDoorCtrl;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bError THEN
+	IF eStateCtrl <> E_StateDoorCtrl.Error THEN
+		nMemState := eStateCtrl;
+	END_IF
+	eStateCtrl := 90; // Fehlerzustand	
+ELSIF NOT bEnable THEN
+	eStateCtrl := E_StateDoorCtrl.NotReady;
+END_IF
+
+CASE eStateCtrl OF
+	E_StateDoorCtrl.NotReady:
+	// E_StateDoorCtrl.DoorClosed: // Tür geschlossen
+	bVC := FALSE;
+	bVO := FALSE;
+	
+	IF bEnable THEN
+		eStateCtrl := E_StateDoorCtrl.DoorClosed;
+	END_IF
+	
+	IF NOT bDoorC THEN
+		eStateCtrl := E_StateDoorCtrl.DoorClosing; // Tür Schließen
+	ELSIF bOpen THEN
+		eStateCtrl := E_StateDoorCtrl.DoorOpening; // Tür öffnen
+ 	END_IF
+	
+	E_StateDoorCtrl.DoorOpening: // TÜr öffnen
+	bVC := FALSE;
+	bVO := TRUE;
+	
+	IF bDoorO THEN
+		eStateCtrl := E_StateDoorCtrl.DoorOpen;
+	END_IF
+	
+	E_StateDoorCtrl.DoorOpen: // Tür geöffnet
+	bVC := FALSE;
+	bVO := TRUE;
+	
+	IF bClose THEN
+		eStateCtrl := E_StateDoorCtrl.DoorClosing; // Tür schließen
+	END_IF
+	
+	E_StateDoorCtrl.DoorClosing: // Tür schließen
+	bVC := TRUE;
+	bVO := FALSE;
+	
+	IF bDoorC THEN
+		eStateCtrl := E_StateDoorCtrl.DoorClosed;
+	END_IF
+	
+	E_StateDoorCtrl.Error: // Fehlerzustand
+	bVC := FALSE;
+	bVO := FALSE;
+	
+	IF NOT bError THEN
+		eStateCtrl := nMemState;
+	END_IF
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>
