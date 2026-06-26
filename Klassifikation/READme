@@ -1,0 +1,91 @@
+## Aufgabe 12.4 – Klassifikationsmodell für defekte Flaschen
+
+### Ziel
+
+Ziel ist es, anhand der `drop_oscillation` Zeitreihe (500 Messwerte pro Flasche)
+vorherzusagen, ob eine Flasche defekt ist (`is_cracked = 1`) oder intakt (`is_cracked = 0`).
+
+### Datenlage
+
+| | Anzahl |
+|---|---|
+| Flaschen gesamt | 636 |
+| Davon intakt | 591 |
+| Davon defekt | 45 |
+
+Der Datensatz ist stark unbalanciert (nur ~7% defekte Flaschen). Deshalb ist
+Accuracy allein kein geeignetes Fehlermaß — der F1-Score ist hier aussagekräftiger,
+da er Precision und Recall gleich gewichtet.
+
+### Feature Engineering
+
+Aus der 500-Werte-Zeitreihe `drop_oscillation` wurden folgende Features extrahiert:
+
+| Feature | Beschreibung |
+|---|---|
+| `mean` | Mittelwert der Schwingung |
+| `std` | Standardabweichung der Schwingung |
+| `max` | Maximum der Schwingung |
+| `min` | Minimum der Schwingung |
+| `lag1` | Letzter Messwert (yt-1) |
+| `freq_1` bis `freq_10` | Fourier-Koeffizienten (Frequenzanteile) |
+
+### Ergebnisse
+
+| Genutzte Features | Modell-Typ | F1 (Training) | F1 (Test) |
+|---|---|---|---|
+| mean | kNN | 0.0000 | 0.0000 |
+| mean | Log. Regression | 0.0000 | 0.0000 |
+| mean | Decision Tree | 0.1579 | 0.0000 |
+| mean, std | kNN | 0.6377 | 0.5714 |
+| mean, std | Log. Regression | 0.0000 | 0.0000 |
+| mean, std | **Decision Tree** | 0.8354 | 0.6400 |
+| mean, std, max, min | kNN | 0.4000 | 0.1538 |
+| mean, std, max, min | Log. Regression | 0.0000 | 0.0000 |
+| mean, std, max, min | Decision Tree | 0.8438 | 0.4000 |
+| mean, std, lag1 | kNN | 0.3830 | 0.1667 |
+| mean, std, lag1 | Log. Regression | 0.0000 | 0.0000 |
+| **mean, std, lag1** | **Decision Tree** | **0.8571** | **0.6667** |
+| mean, std, freq_1..5 | kNN | 0.3043 | 0.4615 |
+| mean, std, freq_1..5 | Log. Regression | 0.0000 | 0.0000 |
+| mean, std, freq_1..5 | Decision Tree | 0.8919 | 0.6667 |
+| alle Features | kNN | 0.5556 | 0.1538 |
+| alle Features | Log. Regression | 0.1538 | 0.1538 |
+| alle Features | Decision Tree | 0.9459 | 0.6667 |
+
+### Bestes Modell
+
+Das beste Modell ist ein **Decision Tree** mit den Features `mean`, `std` und `lag1`
+und erreicht einen F1-Score von **0.667** auf den Testdaten.
+
+### Confusion Matrix (Testdaten)
+
+```
+              precision    recall  f1-score   support
+
+  Intakt (0)       0.98      0.95      0.97       118
+  Defekt (1)       0.57      0.80      0.67        10
+
+    accuracy                           0.94       128
+   macro avg       0.78      0.87      0.82       128
+weighted avg       0.95      0.94      0.94       128
+```
+
+Von 10 tatsächlich defekten Flaschen werden **8 korrekt erkannt** (Recall = 0.80).
+2 defekte Flaschen werden übersehen (False Negative). Die hohe Accuracy von 0.94
+ist aufgrund der unbalancierten Klassen wenig aussagekräftig — der F1-Score von
+0.667 für die defekte Klasse ist das relevante Maß.
+
+<!-- Confusion Matrix Screenshot hier einfügen -->
+![Confusion Matrix](confusion_matrix.png)
+
+### Interpretation
+
+- Die **Logistische Regression** erkennt fast keine defekten Flaschen (F1 ≈ 0.00)
+  — bei stark unbalancierten Daten ohne Klassengewichtung ist das typisch.
+- Der **Decision Tree** schneidet am besten ab, weil er nicht-lineare Entscheidungsgrenzen
+  lernen kann.
+- **kNN** leidet bei mehr Features unter dem Fluch der Dimensionalität — der F1-Score
+  sinkt mit mehr Features statt zu steigen.
+- Die **Standardabweichung** (`std`) ist das wichtigste Feature: defekte Flaschen
+  zeigen eine andere Schwingungsintensität beim Aufprall als intakte.
