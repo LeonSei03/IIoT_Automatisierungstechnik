@@ -20,7 +20,7 @@ try:
     n = len(df)
     cracked = int(df["is_cracked"].sum())
 
-    # Kennzahlen 
+    # Kennzahlen
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Flaschen gesamt", n)
     col2.metric("Gesprungen", cracked)

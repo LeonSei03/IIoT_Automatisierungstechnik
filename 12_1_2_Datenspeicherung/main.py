@@ -1,6 +1,4 @@
 import time
-import sys
-import os
 
 import mqtt_client
 import transform
@@ -11,7 +9,7 @@ def on_message(topic_type, payload):
 
 if __name__ == "__main__":
     client = mqtt_client.start(on_message)
-    print("System laeuft. Strg+C zum Beenden.")
+    print("System läuft. Strg+C zum Beenden.")
     try:
         while True:
             time.sleep(1)

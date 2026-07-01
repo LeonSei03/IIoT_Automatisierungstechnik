@@ -1,69 +1,113 @@
 # Aufgabe 12.1.2 – Datenspeicherung und Visualisierung
 
-## Vorgehen
+## Ziel der Aufgabe
 
-Ziel war es, die Daten der Learning Factory Simulation über MQTT zu empfangen,
-pro Flasche zusammenzuführen, in einer CSV-Datei zu speichern und live zu visualisieren.
+In dieser Aufgabe wurde ein Python-System entwickelt, das Sensordaten der Learning Factory über MQTT empfängt, pro Flasche zusammenführt, speichert und anschließend visualisiert.
 
-Das System besteht aus vier Dateien:
+Die Daten werden sowohl in einer CSV-Datei als auch zusätzlich in einer SQLite-Datenbank gespeichert. 
 
-- **mqtt_client.py** – Verbindet sich mit dem Broker und empfängt alle Nachrichten
-- **transform.py** – Führt alle Topics einer Flasche über die `bottle`-ID zusammen
-- **database.py** – Schreibt eine fertige Flasche als eine Zeile in die CSV
-- **visualisierung.py** – Liest die CSV alle 5 Sekunden neu und aktualisiert den Plot
+## Dateien
 
-## Datenquelle
+| Datei | Aufgabe |
+|------|---------|
+| `main.py` | Startet den MQTT-Subscriber und hält das Programm aktiv |
+| `mqtt_client.py` | Baut die Verbindung zum MQTT-Broker auf und empfängt Nachrichten |
+| `transform.py` | Führt die einzelnen Topics zu einer vollständigen Flaschen-Zeile zusammen |
+| `database.py` | Speichert vollständige Flaschendaten in CSV und SQLite |
+| `visualisierung.py` | Erstellt eine matplotlib-Zeitreihe und speichert den Plot |
+| `dashboard.py` | Zeigt die Daten zusätzlich in einem Streamlit-Dashboard an |
+| `data.csv` | CSV-Datenbank mit den gespeicherten Flaschendaten |
+| `data.db` | SQLite-Datenbank mit Tabelle `flaschen` |
 
-Broker: `158.180.44.197:1883`  
-Topic: `aut/SoSe26/learning_factory_simulation/#`  
-Authentifizierung: Benutzername `bobm`
+## MQTT-Datenquelle
 
-## Transform-Logik
+- Broker: `158.180.44.197`
+- Port: `1883`
+- Topic: `aut/SoSe26/learning_factory_simulation/#`
+- Authentifizierung: Benutzername und Passwort wurden im MQTT-Client gesetzt.
 
-Pro Flasche treffen mehrere Nachrichten auf verschiedenen Topics ein. Der Transform
-sammelt sie im RAM in einem Dictionary (Schlüssel = `bottle`-ID). Sobald `ground_truth`
-ankommt (letztes Topic), gilt die Flasche als vollständig und wird gespeichert.
+Der Subscriber empfängt alle relevanten Topics der Simulation und übergibt die Nutzdaten an die Transformationslogik.
 
-Die Temperatur enthält keine `bottle`-ID – die Zuordnung erfolgt über den Zeitstempel
-(Toleranz: ±5 Sekunden).
+## Transformationslogik
 
-## CSV-Struktur
+Die Sensordaten einer Flasche kommen nicht in einer einzigen Nachricht an, sondern verteilt über mehrere MQTT-Topics. Deshalb sammelt `transform.py` die eingehenden Nachrichten zunächst in einem Zwischenspeicher. Der Zwischenspeicher verwendet die `bottle`-ID als Schlüssel. Sobald alle notwendigen Informationen einer Flasche vorhanden sind, wird daraus eine vollständige Zeile erzeugt und gespeichert. Das Topic `recipe` wird über die in den Dispenser-Nachrichten enthaltene Rezept-ID pro Flasche gespeichert. Die für Regression und Klassifikation benötigten Sensordaten liegen vollständig in einer Zeile pro Flasche vor.
 
-Eine Zeile pro Flasche mit folgenden Spalten:
+Gesammelt werden unter anderem:
 
-| Spalte | Beschreibung |
-|--------|-------------|
-| `bottle` | Flaschen-ID (String) |
-| `recipe` | Rezept-ID |
-| `fill_level_grams_red/blue/green` | Füllstand je Dispenser (g) |
-| `vibration_index_red/blue/green` | Vibrationsindex je Dispenser |
-| `time_red/blue/green` | Unix-Timestamp je Dispenser |
-| `temperature_C_red/blue/green` | Temperatur je Dispenser (°C) |
-| `final_weight` | Endgewicht der Flasche (g) |
-| `time_scale` | Unix-Timestamp der Waage |
-| `is_cracked` | Qualitätslabel (0 = ok, 1 = gesprungen) |
-| `drop_oscillation` | Liste mit 500 Schwingungswerten (JSON-String) |
+- Füllstand der roten, blauen und grünen Station
+- Vibrationsindex der roten, blauen und grünen Station
+- Temperaturwerte
+- Endgewicht der Flasche
+- Qualitätslabel `is_cracked`
+- Schwingungszeitreihe `drop_oscillation`
 
-## Visualisierung
+Da die Temperatur-Nachrichten keine eigene `bottle`-ID enthalten, werden sie über den Zeitstempel der passenden Flasche zugeordnet.
 
-Der Plot zeigt `final_weight` über alle gespeicherten Flaschen.
-Er aktualisiert sich automatisch alle 5 Sekunden während neue Daten hereinkommen.
+## Speicherung
 
-Screenshots des Plots vom final_weight
-![Plot final_weight](plot_screenshot.png)
+Die Daten werden doppelt gespeichert:
 
-## Datenbasis
+1. als CSV-Datei `data.csv`
+2. als SQLite-Datenbank `data.db`
 
-Die Aufzeichnung lief für ca. 15min. 
-Die gespeicherten Daten dienen als Grundlage für die folgenden Aufgaben:
+Die SQLite-Datenbank enthält die Tabelle `flaschen`. Eine Zeile entspricht einer vollständig erfassten Flasche.
 
-- **Lineare Regression** (Termin 3): Füllstand + Vibrationsindex + Temperatur → Endgewicht
-- **Klassifikation** (Termin 4): `drop_oscillation` + `is_cracked` → gesprungene Flaschen erkennen
+## CSV- und Datenbankstruktur
 
+| Spalte | Bedeutung |
+|------|-----------|
+| `bottle` | eindeutige Flaschen-ID |
+| `recipe` | Rezeptnummer |
+| `fill_level_grams_red` | Füllstand an der roten Station |
+| `fill_level_grams_blue` | Füllstand an der blauen Station |
+| `fill_level_grams_green` | Füllstand an der grünen Station |
+| `vibration_index_red` | Vibrationsindex der roten Station |
+| `vibration_index_blue` | Vibrationsindex der blauen Station |
+| `vibration_index_green` | Vibrationsindex der grünen Station |
+| `temperature_C_red` | Temperatur an der roten Station |
+| `temperature_C_blue` | Temperatur an der blauen Station |
+| `temperature_C_green` | Temperatur an der grünen Station |
+| `final_weight` | Endgewicht der Flasche |
+| `time_scale` | Zeitstempel der Waage |
+| `is_cracked` | Qualitätslabel: 0 = in Ordnung, 1 = defekt |
+| `drop_oscillation` | Vibrationszeitreihe mit 500 Messpunkten |
 
-## Dashboard
+## Visualisierung mit matplotlib
 
-![Tabelle der Rohdaten der letzten 20 Flaschen](rohdaten.png)
-![Abbildung des Dashboard's](dashboard.png)
+Für die Visualisierung wurde eine Zeitreihe des Endgewichts `final_weight` erstellt. 
 
+![Zeitreihe final_weight](assets/zeitreihe_final_weight.png)
 
+## Streamlit-Dashboard
+
+Zusätzlich wurde ein Streamlit-Dashboard erstellt. Es zeigt Kennzahlen wie Anzahl der Flaschen, defekte Flaschen und Ausschussrate. Außerdem enthält es eine auswählbare Zeitreihe, einen Scatterplot und eine Tabelle der letzten Flaschen.
+
+![Dashboard](dashboard.png)
+
+Die Rohdatenansicht im Dashboard zeigt die zuletzt gespeicherten Flaschen:
+
+![Rohdaten](rohdaten.png)
+
+## Aufzeichnungsdauer
+
+Die Daten wurden für deutlich länger als 15 Minuten gesammelt.
+
+## Starten des Systems
+
+Zuerst wird der MQTT-Subscriber gestartet:
+
+```bash
+python main.py
+```
+
+Zusätzlich kann das Streamlit-Dashboard in einem weiteren Terminal gestartet werden:
+
+```bash
+streamlit run dashboard.py
+```
+
+Für den matplotlib-Plot kann außerdem gestartet werden:
+
+```bash
+python visualisierung.py
+```

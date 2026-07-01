@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_Blink" Id="{a5e903be-f4ae-4f09-bf7b-8da8294f9ea2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Blink
+VAR_INPUT
+	bEnable : BOOL; // Startsignal für Blinken
+	PT : TIME; // Periodendauer des Blinklichts
+END_VAR
+VAR_OUTPUT
+	bBlink : BOOL := FALSE; // Blinksignal
+END_VAR
+VAR
+	fbTon : TON; // einschaltverzögerung
+	fbTP : TP; // Pulsetimer
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// FUnktionsbaustein ausführen
+fbTon(IN:= , PT:= , Q=> , ET=> );
+fbTP(IN:= , PT:= , Q=> , ET=> );
+
+// zyklisches ausführen von TON
+fbTon.IN := bEnable AND NOT fbTon.Q;
+fbTon.PT := PT;
+
+// Pulsen von bBlink nach TON.Q = True
+fbTP.IN := fbTon.Q; // Ausgang von fbTon.Q triggert den fbTP.IN
+fbTP.PT := PT/2;
+bBlink := fbTP.Q;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

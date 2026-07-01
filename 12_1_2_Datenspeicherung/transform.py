@@ -2,7 +2,7 @@
 # Sammelt alle Topics einer Flasche und gibt eine fertige Zeile zurück
 _buffer = {}   # bottle-ID -> dict mit allen Feldern
 
-# Welche Felder brauchen wir mindestens, bevor wir speichern?
+# Welche Felder brauchen wir mindestens, bevor wir speichern
 _REQUIRED = {
     "dispenser_red", "dispenser_blue", "dispenser_green",
     "temp_red", "temp_blue", "temp_green",
@@ -11,18 +11,11 @@ _REQUIRED = {
 
 def handle(topic_type, payload, save_callback):
     """
-    Wird fuer jede eingehende Nachricht aufgerufen.
+    Wird für jede eingehende Nachricht aufgerufen.
     Wenn eine Flasche komplett ist, wird save_callback(row_dict) aufgerufen.
     """
 
-    # recipe ist flaschenunabhaengig, global merken
-    if topic_type == "recipe":
-        handle._recipe = payload
-        return
-
-    recipe = getattr(handle, "_recipe", None)
-
-    # Dispenser-Nachrichten (red / blue / green)
+    # Dispenser-Nachrichten (red/ blue/ green)
     if topic_type in ("dispenser_red", "dispenser_blue", "dispenser_green"):
         color  = payload["dispenser"]          # "red", "blue", "green"
         bottle = payload["bottle"]
@@ -82,7 +75,7 @@ def _ensure(bottle):
         _buffer[bottle] = {"bottle": bottle, "_got": set()}
 
 def _find_bottle_by_time(t, color):
-    """Sucht die Flasche, deren dispenser_<color>-Zeit am naechsten an t liegt."""
+    """Sucht die Flasche, deren dispenser_<color>-Zeit am nächsten an t liegt."""
     best_bottle = None
     best_diff   = float("inf")
     time_key    = f"time_{color}"
@@ -117,6 +110,6 @@ def _build_row(bottle, b):
         "final_weight":            b.get("final_weight"),
         "time_scale":              b.get("time_scale"),
         "is_cracked":              b.get("is_cracked"),
-        # Schwingung (als JSON-String gespeichert)
+        # Schwingung (als String gespeichert)
         "drop_oscillation":        str(b.get("drop_oscillation", [])),
     }

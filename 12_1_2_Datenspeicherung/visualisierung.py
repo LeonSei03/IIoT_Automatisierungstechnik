@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), "data.csv")
+IMG_PATH = os.path.join(os.path.dirname(__file__), "assets", "zeitreihe_final_weight.png")
 SPALTE   = "final_weight" # je nachdem was wir plotten wollen
 INTERVALL = 5 # Sekunden zwischen Updates
 
@@ -20,6 +21,10 @@ while True:
         ax.set_ylabel(SPALTE)
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
+
+        os.makedirs(os.path.dirname(IMG_PATH), exist_ok=True)
+        plt.savefig(IMG_PATH, dpi=200)
+        
         plt.pause(0.1)
     except FileNotFoundError:
         print("CSV noch nicht vorhanden, warte...")

@@ -45,7 +45,7 @@ def _init_db():
 _init_db()
 
 def save(row: dict):
-    # CSV 
+    # CSV
     write_header = not os.path.exists(CSV_PATH)
     with open(CSV_PATH, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
